@@ -106,16 +106,24 @@ fn Nav() -> Element {
     rsx! {
         nav { class: "nav",
             a { class: "brand", href: "#",
-                FerrisIcon { width: 34.0, height: 22.0 }
                 "rust-web"
                 span { class: "dot", "." }
                 "com"
             }
             div { class: "nav-links",
                 a { href: "#", class: "active", "[ Cards ]" }
-                a { href: "#", "[ Learn ]" }
-                a { href: "#", "[ Draft ]" }
                 a { href: "https://crates.io", target: "_blank", rel: "noreferrer", "[ Crates ↗ ]" }
+                a { href: "https://github.com/FrancescoXX/rust-web", target: "_blank", rel: "noreferrer", class: "github-link",
+                    svg {
+                        width: "22",
+                        height: "22",
+                        view_box: "0 0 16 16",
+                        fill: "currentColor",
+                        path {
+                            d: "M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z",
+                        }
+                    }
+                }
             }
         }
     }
@@ -318,7 +326,7 @@ fn ImageArt(src: String, fallback: Option<String>, lane: Lane, is_repo_card: boo
         src.clone()
     };
 
-    let is_cover = errored() || is_repo_card;
+    let is_cover = errored();
 
     let img_style = if is_cover {
         "width:100%; height:100%; object-fit:cover; display:block; filter:saturate(1.05) contrast(1.02);"
@@ -326,9 +334,15 @@ fn ImageArt(src: String, fallback: Option<String>, lane: Lane, is_repo_card: boo
         "max-width:72%; max-height:72%; width:auto; height:auto; object-fit:contain; display:block; filter:drop-shadow(0 2px 8px rgba(0,0,0,.6));"
     };
 
+    let bg = if is_repo_card {
+        "position:relative; width:100%; height:100%; background:#fff; display:flex; align-items:center; justify-content:center; overflow:hidden;".to_string()
+    } else {
+        format!("position:relative; width:100%; height:100%; background:radial-gradient(circle at 50% 50%, {hex}22, #0a0603 80%); display:flex; align-items:center; justify-content:center; overflow:hidden;")
+    };
+
     rsx! {
         div {
-            style: "position:relative; width:100%; height:100%; background:radial-gradient(circle at 50% 50%, {hex}22, #0a0603 80%); display:flex; align-items:center; justify-content:center; overflow:hidden;",
+            style: "{bg}",
             img {
                 src: "{url}",
                 alt: "",
@@ -361,7 +375,7 @@ fn CardView(card: Card, on_click: EventHandler<Card>) -> Element {
     let gem = rar.gem_color();
     let glow = rar.glow();
     let holo = rar.is_holo();
-    let rar_label = rar.label().to_uppercase();
+    let rar_label = match rar { Rarity::Common => "C", Rarity::Uncommon => "U", Rarity::Rare => "R", Rarity::Mythic => "M" };
 
     let tx = tilt_x();
     let ty = tilt_y();
@@ -404,11 +418,13 @@ fn CardView(card: Card, on_click: EventHandler<Card>) -> Element {
 
             // Card body with 3D transform
             div {
-                style: "width:100%; height:100%; transform:rotateX({tx}deg) rotateY({ty}deg) translateZ(0); transition:{transition}; background:{bg}; padding:10px; position:relative; box-shadow:0 1px 0 rgba(255,180,100,.1) inset, 0 -2px 0 rgba(0,0,0,.5) inset, 0 14px 32px -12px rgba(0,0,0,.85), {glow}; border:1px solid #000; will-change:transform;",
+                class: "tcg-card-body",
+                style: "transform:rotateX({tx}deg) rotateY({ty}deg) translateZ(0); transition:{transition}; background:{bg}; box-shadow:0 1px 0 rgba(255,180,100,.1) inset, 0 -2px 0 rgba(0,0,0,.5) inset, 0 14px 32px -12px rgba(0,0,0,.85), {glow};",
 
                 // Inner frame
                 div {
-                    style: "position:relative; height:100%; border:1px solid {ink}22; background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.2)); display:flex; flex-direction:column; overflow:hidden;",
+                    class: "tcg-card-inner",
+                    style: "border-color:{ink}22;",
 
                     // TITLE BAR
                     div {
@@ -427,15 +443,15 @@ fn CardView(card: Card, on_click: EventHandler<Card>) -> Element {
                     // ART
                     div {
                         style: "height:150px; position:relative; border-bottom:1px solid {ink}22; overflow:hidden; background:#0b0906;",
-                        if card_image_url(card_inner.name).is_some() {
+                        if card_inner.image_url.is_some() {
                             ImageArt {
-                                src: card_image_url(card_inner.name).unwrap().to_string(),
-                                fallback: og_fallback(card_inner.name).map(|s| s.to_string()),
+                                src: card_inner.image_url.clone().unwrap(),
+                                fallback: card_inner.github_repo.clone(),
                                 lane: lane,
-                                is_repo_card: card_inner.name == "Leptos",
+                                is_repo_card: card_inner.is_logo_card,
                             }
                         } else {
-                            CardArtSvg { seed: card_inner.name.to_string(), lane: lane }
+                            CardArtSvg { seed: card_inner.name.clone(), lane: lane }
                         }
                         // Holo sheen
                         if holo {
@@ -463,17 +479,17 @@ fn CardView(card: Card, on_click: EventHandler<Card>) -> Element {
                                     style: "font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.1em; font-weight:700; color:{hex}; text-transform:uppercase; flex-shrink:0; padding-top:1px;",
                                     "{ability.label}"
                                 }
-                                if let Some(text) = ability.text {
+                                if let Some(ref text) = ability.text {
                                     span { style: "flex:1;", "{text}" }
                                 }
                             }
                         }
-                        if let Some(flavor) = card_inner.flavor {
+                        if let Some(ref flavor) = card_inner.flavor {
                             div {
                                 style: "margin-top:auto; padding-top:6px; border-top:1px dashed {hex}44; color:#a07448; font-size:10px; line-height:1.4;",
                                 span { style: "color:{hex}; opacity:.7;", ">" }
                                 " {flavor}"
-                                if let Some(by) = card_inner.flavor_by {
+                                if let Some(ref by) = card_inner.flavor_by {
                                     div {
                                         style: "text-align:right; font-size:9px; color:#7a5a2c; margin-top:2px; opacity:.75;",
                                         "— {by}"
@@ -523,9 +539,12 @@ fn ZoomWrap(card: Card, on_close: EventHandler<()>) -> Element {
             class: "zoom-wrap",
             onclick: move |e| e.stop_propagation(),
 
-            // Scaled card
-            div {
-                style: "transform:scale(1.4); transform-origin:center; margin:40px 80px 40px 0;",
+            // Scaled card — links to GitHub repo
+            a {
+                href: card.github_repo.as_ref().map(|r| format!("https://github.com/{r}")).unwrap_or_default(),
+                target: "_blank",
+                rel: "noreferrer",
+                style: "transform:scale(1.4); transform-origin:center; margin:40px 80px 40px 0; display:block; text-decoration:none; color:inherit;",
                 CardView { card: card.clone(), on_click: |_: Card| {} }
             }
 
@@ -544,34 +563,62 @@ fn ZoomWrap(card: Card, on_close: EventHandler<()>) -> Element {
                                 style: "font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.1em; color:#c9a34a; text-transform:uppercase; margin-right:8px;",
                                 "{ability.label}"
                             }
-                            if let Some(text) = ability.text {
+                            if let Some(ref text) = ability.text {
                                 span { "{text}" }
                             }
                         }
                     }
                 }
                 // Code snippet
-                if let Some(snippet) = snippet_for(card.name) {
-                    div { class: "lore-label", "Hello, world" }
-                    div { class: "code-block",
-                        div { class: "code-head",
-                            span { class: "dot r" }
-                            span { class: "dot y" }
-                            span { class: "dot g" }
-                            span { class: "file", "{snippet.title}" }
-                            span { class: "lang", "{snippet.lang}" }
-                        }
-                        pre {
-                            code { "{snippet.code}" }
+                {
+                    let snippet = snippet_for(&card.name);
+                    let mut copied = use_signal(|| false);
+                    rsx! {
+                        if let Some(snippet) = snippet.as_ref() {
+                            div { class: "lore-label", "Hello, world" }
+                            div { class: "code-block",
+                                div { class: "code-head",
+                                    span { class: "dot r" }
+                                    span { class: "dot y" }
+                                    span { class: "dot g" }
+                                    span { class: "file", "{snippet.title}" }
+                                    button {
+                                        class: "copy-btn",
+                                        onclick: {
+                                            let code = snippet.code.to_string();
+                                            move |_| {
+                                                let c = code.clone();
+                                                spawn(async move {
+                                                    let js = format!(
+                                                        "navigator.clipboard.writeText({})",
+                                                        serde_json::to_string(&c).unwrap_or_default()
+                                                    );
+                                                    let _ = document::eval(&js).await;
+                                                    copied.set(true);
+                                                    #[cfg(target_arch = "wasm32")]
+                                                    {
+                                                        gloo_timers::future::TimeoutFuture::new(1500).await;
+                                                        copied.set(false);
+                                                    }
+                                                });
+                                            }
+                                        },
+                                        if copied() { "Copied!" } else { "Copy" }
+                                    }
+                                }
+                                pre {
+                                    code { "{snippet.code}" }
+                                }
+                            }
                         }
                     }
                 }
                 // Flavor
-                if let Some(flavor) = card.flavor {
+                if let Some(ref flavor) = card.flavor {
                     div { class: "lore-label", "Flavor" }
                     div { style: "font-style:italic; color:#cbbf95; font-size:14px;",
                         "\"{flavor}\""
-                        if let Some(by) = card.flavor_by {
+                        if let Some(ref by) = card.flavor_by {
                             div {
                                 style: "font-style:normal; font-size:11px; color:#9fb1a6; margin-top:4px;",
                                 "— {by}"
@@ -579,17 +626,20 @@ fn ZoomWrap(card: Card, on_close: EventHandler<()>) -> Element {
                         }
                     }
                 }
-                // Deck stats
-                if card.stars.is_some() {
-                    div { class: "lore-label", "Deck Stats" }
+                // GitHub info
+                if let Some(ref repo) = card.github_repo {
+                    div { class: "lore-label", "GitHub" }
                     div { class: "traits",
-                        if let Some(stars) = card.stars {
-                            span { class: "chip", "★ {stars} on GitHub" }
+                        if let Some(ref stars) = card.stars {
+                            span { class: "chip", "★ {stars}" }
                         }
-                        span { class: "chip", "Rarity · {card.rarity.label()}" }
-                        {
-                            let cost_str = card.cost.iter().map(|c| format!("{:?}", c)).collect::<Vec<_>>().join(" · ");
-                            rsx! { span { class: "chip", "Cost · {cost_str}" } }
+                        a {
+                            class: "chip",
+                            href: "https://github.com/{repo}",
+                            target: "_blank",
+                            rel: "noreferrer",
+                            style: "text-decoration:none; color:inherit;",
+                            "{repo} ↗"
                         }
                     }
                 }
