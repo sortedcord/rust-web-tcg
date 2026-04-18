@@ -1,0 +1,10 @@
+zerops:
+  - setup: app
+    build:
+      base: rust@stable
+      buildCommands:
+        - cargo build --release
+      deployFiles:
+        - target/release/rust-web
+    run:
+      start: ./rust-web
