@@ -3,6 +3,6 @@ zerops:
     build:
       base: alpine@latest
       deployFiles:
-        - target/dx/rust-web-tcg/release/web/public/
+        - dist/~
     run:
       base: static
