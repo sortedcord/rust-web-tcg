@@ -669,5 +669,31 @@
     "image_url": "https://raw.githubusercontent.com/clap-rs/clap/master/assets/clap.png",
     "github_repo": "clap-rs/clap",
     "is_logo_card": false
+  },
+ {
+    "no": 35,
+    "name": "cargo-lambda",
+    "lane": "Tools",
+    "rarity": "Rare",
+    "cost": ["Cpu", "Net"],
+    "card_type": "Artifact — AWS Lambda CLI",
+    "power": "4",
+    "toughness": "4",
+    "abilities": [
+      {
+        "label": "Run/Build/Deploy",
+        "text": "Run, build, and deploy Rust functions on AWS Lambda natively from your computer — no containers or VMs required."
+      },
+      {
+        "label": "Cargo-native",
+        "text": "Extends Cargo workflows so local dev, packaging, and Lambda deploys share one command surface."
+      }
+    ],
+    "flavor": "Serverless, but still Rust all the way down.",
+    "flavor_by": null,
+    "stars": null,
+    "image_url": "https://www.cargo-lambda.info",
+    "github_repo": "cargo-lambda/cargo-lambda",
+    "is_logo_card": false
   }
 ]
